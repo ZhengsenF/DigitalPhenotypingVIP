@@ -25,7 +25,8 @@ import json
 import datetime
 import numpy as np
 import skimage.draw
-import cv2
+from PIL import Image
+from PIL import ImageDraw, ImageFont
 
 # Root directory of the project
 ROOT_DIR = os.getcwd()
@@ -233,24 +234,41 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         splash = color_splash(image, r['masks'])
         print(type(r['masks']))
 
+        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+        bbInformationName = file_name[0:-3] + 'txt'
         # save bb information
-        with open('detection_result.txt', 'w') as file:
+        with open(bbInformationName, 'w') as file:
+            # <class_name> <left> <top> <right> <bottom> [<difficult>]
+            # bb information top left bottom right
             for each_roi, each_score in zip(r['rois'], r['scores']):
                 file.write(f'spike {each_score}')
-                for each_point in each_roi:
-                    file.write(f' {each_point}')
+                file.write(f' {each_roi[1]} {each_roi[0]} {each_roi[3]} {each_roi[2]}')
                 file.write('\n')
 
         # draw bb
-
         for eachBB in r['rois']:
-            print(eachBB)
             splash = drawBoundingBox(eachBB, splash)
 
+        # write confidence level
+        pilImage = Image.fromarray(splash, 'RGB')
+        # fnt = ImageFont.truetype('Pillow/Tests/fonts/FreeMono.ttf', 40)
+        draw = ImageDraw.Draw(pilImage)
+        for eachBB, eachText in zip(r['rois'], r['scores']):
+            draw.text((eachBB[1], eachBB[0]), '{:3f}'.format(eachText), fill=(255,255,255,255))
+
+        # write number of pixel
+        for eachBB, maskIndex in zip(r['rois'], range(0, len(r['rois']))):
+            pixelSum = 0
+            for topBot in range(eachBB[0], eachBB[2]):
+                for leftRight in range(eachBB[1], eachBB[3]):
+                    print(r['masks'].shape)
+                    if r['masks'][topBot][leftRight][maskIndex]:
+                        pixelSum += 1
+            draw.text((eachBB[1], eachBB[2]), '{}'.format(pixelSum), fill=(255,255,255,255))
 
         # Save output
-        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        skimage.io.imsave(file_name, splash)
+        pilImage.save(file_name)
+        # skimage.io.imsave(file_name, splash)
     elif video_path:
         import cv2
         # Video capture
