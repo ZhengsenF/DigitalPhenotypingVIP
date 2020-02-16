@@ -311,8 +311,18 @@ def drawBoundingBox(bb, imageArr):
             imageArr[topBot][leftIndex][2] = 0
 
     # draw right
-    for
+    for rightIndex in range(right - bbWidth, right):
+        for topBot in range(top, bottom):
+            imageArr[topBot][rightIndex][0] = 0
+            imageArr[topBot][rightIndex][1] = 255
+            imageArr[topBot][rightIndex][2] = 0
 
+    # draw bottom
+    for leftRight in range(left, right):
+        for botIndex in range(bottom, bottom + bbWidth):
+            imageArr[botIndex][leftRight][0] = 0
+            imageArr[botIndex][leftRight][1] = 255
+            imageArr[botIndex][leftRight][2] = 0
     return imageArr
 
 ############################################################
