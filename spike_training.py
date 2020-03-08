@@ -14,7 +14,7 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
     # Train a new model starting from ImageNet weights
     python3 balloon.py train --dataset=/path/to/balloon/dataset --weights=imagenet
     # Apply color splash to an image
-    python spike_training.py splash --weights=d:/maskRCNN/Mask_RCNN/logs/balloon20200202T1705/mask_rcnn_balloon_0030.h5 --image=d:/maskRCNN/training_set/val/_442_2149900.png
+    python spike_training.py splash --weights=d:/maskRCNN/Mask_RCNN/logs/balloon20200202T1705/mask_rcnn_balloon_0030.h5 --image=d:/maskRCNN/recognition_target
     # Apply color splash to video using the last weights you trained
     python3 spike_training.py splash --weights=last --video=<URL or path to file>
 """
@@ -27,6 +27,8 @@ import numpy as np
 import skimage.draw
 from PIL import Image
 from PIL import ImageDraw, ImageFont
+import glob
+import pandas as pd
 
 # Root directory of the project
 ROOT_DIR = os.getcwd()
@@ -219,15 +221,19 @@ def color_splash(image, mask):
     return splash
 
 
-def detect_and_color_splash(model, image_path=None, video_path=None):
+def detect_and_color_splash(model, image_path=None, video_path=None, save_path=None):
     assert image_path or video_path
-
+    num_spikes = []
+    pixel_count = []
+    spike_height = []
+    spike_width = []
+    center_mask = []
     # Image or video?
     if image_path:
         # Run model detection and generate the color splash effect
-        print("Running on {}".format(args.image))
+        print("Running on {}".format(image_path))
         # Read image
-        image = skimage.io.imread(args.image)
+        image = skimage.io.imread(image_path)
         # Detect objects
         r = model.detect([image], verbose=1)[0]
         # Color splash
@@ -235,7 +241,7 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         print(type(r['masks']))
 
         file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        bbInformationName = file_name[0:-3] + 'txt'
+        bbInformationName = os.path.join(save_path, file_name[0:-3] + 'txt')
         # save bb information
         with open(bbInformationName, 'w') as file:
             # <class_name> <left> <top> <right> <bottom> [<difficult>]
@@ -246,8 +252,28 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
                 file.write('\n')
 
         # draw bb
+        spike_cnt = 0  # number of spikes
         for eachBB in r['rois']:
             splash = drawBoundingBox(eachBB, splash)
+            spike_cnt += 1
+            spike_height.append(eachBB[2] - eachBB[0])
+            spike_width.append(eachBB[3] - eachBB[1])
+        for _ in range(len(spike_height)):
+            num_spikes.append(spike_cnt)
+
+        # draw center of mask by k mean
+        for eachBB, maskIndex in zip(r['rois'], range(0, len(r['rois']))):
+            topBotList = []
+            leftRightList = []
+            maskCenter = {}
+            for topBot in range(eachBB[0], eachBB[2]):
+                for leftRight in range(eachBB[1], eachBB[3]):
+                    if r['masks'][topBot][leftRight][maskIndex]:
+                        topBotList.append(topBot)
+                        leftRightList.append(leftRight)
+            maskCenter[maskIndex] = (sum(topBotList) // len(topBotList), sum(leftRightList) // len(leftRightList))
+            center_mask.append(f'({maskCenter[maskIndex][0]}, {maskCenter[maskIndex][1]})')
+            splash = drawCenterMask(maskCenter[maskIndex], splash)
 
         # write confidence level
         pilImage = Image.fromarray(splash, 'RGB')
@@ -259,15 +285,20 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
         # write number of pixel
         for eachBB, maskIndex in zip(r['rois'], range(0, len(r['rois']))):
             pixelSum = 0
+            topBotList = []
+            leftRightList = []
+            maskCenter = {}
             for topBot in range(eachBB[0], eachBB[2]):
                 for leftRight in range(eachBB[1], eachBB[3]):
-                    print(r['masks'].shape)
                     if r['masks'][topBot][leftRight][maskIndex]:
                         pixelSum += 1
+                        topBotList.append(topBot)
+                        leftRightList.append(leftRight)
+            pixel_count.append(pixelSum)
             draw.text((eachBB[1], eachBB[2]), '{}'.format(pixelSum), fill=(255,255,255,255))
 
         # Save output
-        pilImage.save(file_name)
+        pilImage.save(os.path.join(save_path, file_name))
         # skimage.io.imsave(file_name, splash)
     elif video_path:
         import cv2
@@ -303,6 +334,16 @@ def detect_and_color_splash(model, image_path=None, video_path=None):
                 count += 1
         vwriter.release()
     print("Saved to ", file_name)
+    return num_spikes, pixel_count, spike_height, spike_width, center_mask
+
+
+def drawCenterMask(point, imageArr):
+    for topDown in range(point[0] - 1, point[0] + 2):
+        for leftRight in range(point[1] - 1, point[1] + 2):
+            imageArr[topDown][leftRight][0] = 0
+            imageArr[topDown][leftRight][1] = 255
+            imageArr[topDown][leftRight][2] = 0
+    return imageArr
 
 
 def drawBoundingBox(bb, imageArr):
@@ -437,8 +478,34 @@ if __name__ == '__main__':
     if args.command == "train":
         train(model)
     elif args.command == "splash":
-        detect_and_color_splash(model, image_path=args.image,
-                                video_path=args.video)
+        # detect_and_color_splash(model, image_path=args.image,
+        #                         video_path=args.video)
+        image_dir = args.image
+        targets = glob.glob(image_dir + '/*.*')
+        # csv output
+        file_name_main = []
+        num_spikes_main = []
+        pixel_count_main = []
+        spike_height_main = []
+        spike_width_main = []
+        center_mask_main = []
+
+        for eachTarget in targets:
+            save_path = 'D:/maskRCNN/recognition'
+            output = detect_and_color_splash(model, image_path=eachTarget, save_path=save_path)
+            for _ in range(len(output[0])):
+                file_name_main.append(eachTarget)
+            num_spikes_main += output[0]
+            pixel_count_main += output[1]
+            spike_height_main += output[2]
+            spike_width_main += output[3]
+            center_mask_main += output[4]
+
+        output_dict = {'file name': file_name_main, 'pixel count': pixel_count_main, 'spike height': spike_height_main,
+                       'spike width': spike_width_main, 'center of mask': center_mask_main}
+        df = pd.DataFrame(output_dict)
+        df.to_csv(os.path.join(save_path, 'output.csv'))
+
     else:
         print("'{}' is not recognized. "
               "Use 'train' or 'splash'".format(args.command))
