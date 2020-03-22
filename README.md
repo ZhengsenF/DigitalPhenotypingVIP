@@ -19,6 +19,7 @@ Environment Setup
 5. Download COCO weights<br />
   https://github.com/matterport/Mask_RCNN/releases<br />
   Choose Mask R-CNN 2.0, mask_rcnn_coco.h5<br />
+  //maybe download spike weights from dropbox link provided. 
   
  6. Run the script recognition.py for viewing the trained result of spikes<br />
  ```
