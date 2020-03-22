@@ -14,7 +14,7 @@ Environment Setup
   
 4. Install dependecies (use requirements.txt from this gitpage, not the one cloned from Mask_rCNN)<br />
 ```
-  pip3 install -r requirements.txt<br />
+  pip3 install -r requirements.txt
 ```
 5. Download COCO weights<br />
   https://github.com/matterport/Mask_RCNN/releases<br />
