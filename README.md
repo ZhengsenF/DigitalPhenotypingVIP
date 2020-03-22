@@ -7,7 +7,7 @@ Environment Setup
   
 2. Go to anaconda, install python 3.6 version<br />
 ```
-  conda install python==3.6<br />
+  conda install python==3.6
 ```
 3. Git clone Mask RCNN github page<br />
   https://github.com/matterport/Mask_RCNN<br />
@@ -22,7 +22,7 @@ Environment Setup
   
  6. Run the script recognition.py for viewing the trained result of spikes<br />
  ```
-  python recognition.py path/to/model path/to/data/directory/ path/to/result/directory/<br />
-  python recognition.py D:/maskRCNN/DigitalPhenotypingVIP/spike/model/spike.h5 D:/maskRCNN/DigitalPhenotypingVIP/spike/target/       D:/maskRCNN/DigitalPhenotypingVIP/spike/result/<br />
+  python recognition.py path/to/model path/to/data/directory/ path/to/result/directory/
+  python recognition.py D:/maskRCNN/DigitalPhenotypingVIP/spike/model/spike.h5 D:/maskRCNN/DigitalPhenotypingVIP/spike/target/       D:/maskRCNN/DigitalPhenotypingVIP/spike/result/
   ```
 **NOTE: THE DIRECTORY MAY BE DIFFERENT<br />
