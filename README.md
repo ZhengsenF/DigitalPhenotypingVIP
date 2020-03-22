@@ -2,8 +2,8 @@
 Environment Setup
 
 1. Installing Anaconda
-  https://www.anaconda.com/distribution/
-  choose Python 3.7 version
+  *https://www.anaconda.com/distribution/
+  *choose Python 3.7 version
   
 2. Go to anaconda, install python 3.6 version
   conda install python==3.6
