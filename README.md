@@ -7,7 +7,7 @@ Environment Setup
   
 2. Go to anaconda, install python 3.6 version<br />
 ```
-  conda install python==3.6
+  conda install python=3.6
 ```
 3. Git clone Mask RCNN github page<br />
   https://github.com/matterport/Mask_RCNN<br />
