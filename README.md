@@ -22,6 +22,7 @@ Environment Setup
   //maybe download spike weights from dropbox link provided. 
   
  6. Run the script recognition.py for viewing the trained result of spikes<br />
+    Copy recognition.py to the directory of MaskRCNN and then type the following command<br />
  ```
   python recognition.py path/to/model path/to/data/directory/ path/to/result/directory/
   python recognition.py D:/maskRCNN/DigitalPhenotypingVIP/spike/model/spike.h5 D:/maskRCNN/DigitalPhenotypingVIP/spike/target/       D:/maskRCNN/DigitalPhenotypingVIP/spike/result/
