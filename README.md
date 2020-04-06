@@ -36,7 +36,7 @@ Navigate into DigitaPhenotypingVIP and then
  ```
   python recognition.py path/to/weight path/to/data/directory/ path/to/result/directory/
  ```
-  For example
+    For example
  ```
   python recognition.py D:/maskRCNN/DigitalPhenotypingVIP/spike/model/spike.h5 D:/maskRCNN/DigitalPhenotypingVIP/spike/target/       D:/maskRCNN/DigitalPhenotypingVIP/spike/result/
   ```
