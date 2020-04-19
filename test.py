@@ -12,7 +12,7 @@ img = np.array(img)
 #flip
 flipped_img = np.fliplr(img)
 plt.imshow(flipped_img)
-#plt.show()
 img = Image.fromarray(flipped_img)
 img.save("flipped_img.jpg")
-#np.save("flip",flipped_img)
+
+#
