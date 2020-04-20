@@ -1,6 +1,6 @@
 """
 python recognition.py path/to/model path/to/data/directory/ path/to/result/directory/
-python recognition.py D:/maskRCNN/DigitalPhenotypingVIP/spike/model/spike.h5 D:/maskRCNN/DigitalPhenotypingVIP/spike/target/ D:/maskRCNN/DigitalPhenotypingVIP/spike/result/
+python recognition.py D:/maskRCNN/weights/spike.h5 D:/maskRCNN/recognition_target/ D:/maskRCNN/recognition/
 """
 
 """
@@ -21,6 +21,7 @@ from PIL import Image
 from PIL import ImageDraw, ImageFont
 import glob
 import pandas as pd
+import random
 
 # Root directory of the project
 ROOT_DIR = os.getcwd()
@@ -172,17 +173,35 @@ def color_splash(image, mask):
     mask: instance segmentation mask [height, width, instance count]
     Returns result image.
     """
-    # Make a grayscale copy of the image. The grayscale copy still
-    # has 3 RGB channels, though.
-    gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
-    # We're treating all instances as one, so collapse the mask into one layer
-    mask = (np.sum(mask, -1, keepdims=True) >= 1)
-    # Copy color pixels from the original color image where mask is set
-    if mask.shape[0] > 0:
-        splash = np.where(mask, image, gray).astype(np.uint8)
-    else:
-        splash = gray
-    return splash
+    # # Make a grayscale copy of the image. The grayscale copy still
+    # # has 3 RGB channels, though.
+    # gray = skimage.color.gray2rgb(skimage.color.rgb2gray(image)) * 255
+    # # We're treating all instances as one, so collapse the mask into one layer
+    #
+    # mask = (np.sum(mask, -1, keepdims=True) >= 1)
+    # # Copy color pixels from the original color image where mask is set
+    # if mask.shape[0] > 0:
+    #     splash = np.where(mask, image, gray).astype(np.uint8)
+    # else:
+    #     splash = gray
+    # return splash
+
+    color = []
+    for _ in range(mask.shape[2]):
+        color.append(random.randrange(130, 200))
+    change_color_index = []
+    for _ in range(mask.shape[2]):
+        change_color_index.append(random.randrange(0, 3))
+    for each_row_index, each_row in enumerate(mask):
+        for each_col_index, each_col in enumerate(each_row):
+            # print(each_col)
+            for mask_index, each_mask in enumerate(each_col):
+                if each_mask:
+                    # print(change_color_index[mask_index])
+                    image[each_row_index][each_col_index][change_color_index[mask_index]] = color[(mask_index * 13) % mask.shape[2]]
+                    image[each_row_index][each_col_index][(change_color_index[mask_index] + 7) % 3] = color[mask_index]
+                pass
+    return image
 
 
 def detect_and_color_splash(model, image_path=None, video_path=None, save_path=None):
@@ -259,7 +278,11 @@ def detect_and_color_splash(model, image_path=None, video_path=None, save_path=N
                         topBotList.append(topBot)
                         leftRightList.append(leftRight)
             pixel_count.append(pixelSum)
-            draw.text((eachBB[1], eachBB[2]), '{}'.format(pixelSum), fill=(255, 255, 255, 255))
+            # draw.text((eachBB[1], eachBB[2]), '{}'.format(pixelSum), fill=(255, 255, 255, 255))
+
+        # write object index
+        for eachBB, maskIndex in zip(r['rois'], range(0, len(r['rois']))):
+            draw.text((eachBB[1], eachBB[2]), '{}'.format(maskIndex), fill=(255, 255, 255, 255))
 
         # Save output
         pilImage.save(os.path.join(save_path, file_name))
