@@ -37,8 +37,18 @@ class augmentation:
     def addLayer(self, action):
         self.layer.append(action)
 
+    # example: augmentation + rotate_range(30, 90, 0.5)
     def __add__(self, other):
         self.addLayer(other)
+
+    # example: rotate_range(30, 90, 0.5) + augmentation
+    def __radd__(self, other):
+        self.addLayer(other)
+
+    # example: augmentation += rotate_range(30, 90, 0.5)
+    def __iadd__(self, other):
+        self.addLayer(other)
+        return self
 
     # print all the layer of actions
     def printLayer(self):
@@ -124,42 +134,91 @@ class rotate_range:
         print(f'{image_name} go through {self} with angle {angle}')  # debug
         height, width = image.size
 
-        # image_copy = deepcopy(image) #debug
-        # draw_copy = ImageDraw.Draw(image_copy) #debug
         # rotate the image
         image = image.rotate(angle)
-        # draw = ImageDraw.Draw(image)
+        # draw = ImageDraw.Draw(image)  # debug
 
         # rotate the labeling
         radian = radians(angle)
-        for each_key in label:
-            # look for the label for the specific file
-            if image_name in each_key:
-                # rotate the label for each mask
-                for region_index, each_region in enumerate(label[each_key]['regions']):
-                    x_s = each_region['shape_attributes']['all_points_x']
-                    y_s = each_region['shape_attributes']['all_points_y']
-                    for index, (each_x, each_y) in enumerate(zip(x_s, y_s)):
-                        # draw_copy.point((each_x,each_y)) #debug
-                        new_x = (each_x - width / 2) * cos(radian) + (each_y - height / 2) * sin(radian) + width / 2
-                        new_y = -(each_x - width / 2) * sin(radian) + (each_y - height / 2) * cos(radian) + height / 2
-                        label[each_key]['regions'][region_index]['shape_attributes']['all_points_x'][index] = new_x
-                        label[each_key]['regions'][region_index]['shape_attributes']['all_points_y'][index] = new_y
-
-                        # draw.point((new_x, new_y))  # debug
-                break
+        for region_index, each_region in enumerate(label[image_name]['regions']):
+            x_s = each_region['shape_attributes']['all_points_x']
+            y_s = each_region['shape_attributes']['all_points_y']
+            for index, (each_x, each_y) in enumerate(zip(x_s, y_s)):
+                # draw_copy.point((each_x,each_y)) #debug
+                new_x = (each_x - width / 2) * cos(radian) + (each_y - height / 2) * sin(radian) + width / 2
+                new_y = -(each_x - width / 2) * sin(radian) + (each_y - height / 2) * cos(radian) + height / 2
+                label[image_name]['regions'][region_index]['shape_attributes']['all_points_x'][index] = int(new_x)
+                label[image_name]['regions'][region_index]['shape_attributes']['all_points_y'][index] = int(new_y)
+                # draw.point((new_x, new_y))  # debug
         # image.show() #debug
         # image_copy.show() #debug
         return image, label
 
 
-class vertical_flip(rotate_range):
+# flip from top to bottom
+class vertical_flip:
     # probability: the probability that this layer of action will happen (from 0 to 1)
     def __init__(self, probability):
-        super().__init__(180, 180, probability)
+        self.probability = probability
 
     def __str__(self):
         return f'vertically flip randomly with probability of {self.probability}'
+
+    def execute(self, image, label, image_name):
+        # determine if continue or not
+        if not generateBool(self.probability):
+            return image, label
+        print(f'{image_name} go through {self}')  # debug
+        height, _ = image.size
+        middle = int(height / 2)
+
+        # flip the image from left to right
+        image = image.transpose(Image.FLIP_TOP_BOTTOM)
+        draw = ImageDraw.Draw(image)  # debug
+
+        # flip the labeling
+        for region_index, each_region in enumerate(label[image_name]['regions']):
+            x_s = each_region['shape_attributes']['all_points_x']  # debug
+            y_s = each_region['shape_attributes']['all_points_y']
+            for index, each_y in enumerate(y_s):
+                # draw_copy.point((each_x,each_y)) #debug
+                new_y = middle + middle - each_y
+                label[image_name]['regions'][region_index]['shape_attributes']['all_points_y'][index] = int(new_y)
+                draw.point((x_s[index], new_y))  # debug
+        return image, label
+
+
+# flip from left to right
+class horizontal_flip:
+    # probability: the probability that this layer of action will happen (from 0 to 1)
+    def __init__(self, probability):
+        self.probability = probability
+
+    def __str__(self):
+        return f'horizontally flip randomly with probability of {self.probability}'
+
+    def execute(self, image, label, image_name):
+        # determine if continue or not
+        if not generateBool(self.probability):
+            return image, label
+        print(f'{image_name} go through {self}')  # debug
+        _, width = image.size
+        middle = int(width / 2)
+
+        # flip the image from left to right
+        image = image.transpose(Image.FLIP_LEFT_RIGHT)
+        draw = ImageDraw.Draw(image)  # debug
+
+        # flip the labeling
+        for region_index, each_region in enumerate(label[image_name]['regions']):
+            x_s = each_region['shape_attributes']['all_points_x']
+            y_s = each_region['shape_attributes']['all_points_y']  # debug
+            for index, each_x in enumerate(x_s):
+                # draw_copy.point((each_x,each_y)) #debug
+                new_x = middle + middle - each_x
+                label[image_name]['regions'][region_index]['shape_attributes']['all_points_x'][index] = int(new_x)
+                draw.point((new_x, y_s[index]))  # debug
+        return image, label
 
 
 # generate a random angle of transformation
@@ -187,6 +246,8 @@ if __name__ == '__main__':
     # r = rotate_range(120, 150, 1)
     # r.execute(img, label_test, name_test)
 
-    a.addLayer(vertical_flip(1))
-    a.augment(2)
+    # a.addLayer(vertical_flip(1))
+    # a.augment(2)
 
+    a += vertical_flip(1)
+    a.augment(2)
