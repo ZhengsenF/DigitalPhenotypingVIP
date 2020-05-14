@@ -155,6 +155,18 @@ class rotate_range:
         return image, label
 
 
+# rotate randomly in a angle
+class rotate_angle(rotate_range):
+    # angle: angle to rotate in degree
+    # probability: the probability that this layer of action will happen (from 0 to 1)
+    def __init__(self, angle, probability):
+        super().__init__(angle, angle, probability)
+        self.angle = angle
+
+    def __str__(self):
+        return f'rotate {self.angle} degree randomly with probability of {self.probability}'
+
+
 # flip from top to bottom
 class vertical_flip:
     # probability: the probability that this layer of action will happen (from 0 to 1)
@@ -249,5 +261,5 @@ if __name__ == '__main__':
     # a.addLayer(vertical_flip(1))
     # a.augment(2)
 
-    a += vertical_flip(1)
+    a += rotate_angle(75, 1)
     a.augment(2)
