@@ -57,14 +57,14 @@ class augmentation:
             raise ValueError('please add layers first before augmentation')
         print('Augment with the following layers:')
         print(self)
-        print(f'generating {num_sample} samples')
+        print(f'generating {num_sample} samples\n')
         image_num = len(self.image_filenames)  # number of images in the directory
         generated_images = []
         generated_image_name = []
         generated_label = {}
         for i in range(num_sample):
             target_image_name = self.image_filenames[i % image_num]
-            print(target_image_name)
+            print(target_image_name)  # debug
             target_image = Image.open(target_image_name)
             # update the label
             for each_key in self.label:
@@ -79,12 +79,14 @@ class augmentation:
             # go through each layers of transformation
             for each_layer in self.layer:
                 target_image, generated_label = each_layer.execute(target_image, generated_label, save_name)
-                generated_images.append(target_image)
-
+            print()
+            generated_images.append(deepcopy(target_image))
         # output all the images
         for each_image, each_name in zip(generated_images, generated_image_name):
             each_image.save(os.path.join(self.result, each_name))
-
+        # save the label
+        with open(os.path.join(self.result, 'augmented.json'), 'w') as file:
+            json.dump(generated_label, file)
 
 
 # rotate randomly in a angle range
@@ -119,13 +121,14 @@ class rotate_range:
         else:
             angle = generateAngle(self.start_angle, self.end_angle)
 
+        print(f'{image_name} go through {self} with angle {angle}')  # debug
         height, width = image.size
 
         # image_copy = deepcopy(image) #debug
         # draw_copy = ImageDraw.Draw(image_copy) #debug
         # rotate the image
         image = image.rotate(angle)
-        draw = ImageDraw.Draw(image)
+        # draw = ImageDraw.Draw(image)
 
         # rotate the labeling
         radian = radians(angle)
@@ -143,11 +146,20 @@ class rotate_range:
                         label[each_key]['regions'][region_index]['shape_attributes']['all_points_x'][index] = new_x
                         label[each_key]['regions'][region_index]['shape_attributes']['all_points_y'][index] = new_y
 
-                        draw.point((new_x, new_y))
+                        # draw.point((new_x, new_y))  # debug
                 break
         # image.show() #debug
         # image_copy.show() #debug
         return image, label
+
+
+class vertical_flip(rotate_range):
+    # probability: the probability that this layer of action will happen (from 0 to 1)
+    def __init__(self, probability):
+        super().__init__(180, 180, probability)
+
+    def __str__(self):
+        return f'vertically flip randomly with probability of {self.probability}'
 
 
 # generate a random angle of transformation
@@ -162,10 +174,10 @@ def generateBool(probability):
 
 if __name__ == '__main__':
     a = augmentation(path_to_images='test', path_json='test/test.json', path_to_results='result')
-    a.addLayer(rotate_range(50, 70, 0.7))
-    a.addLayer(rotate_range(0, 170, 0.4))
-    a.addLayer(rotate_range(180, 180, 0.3))
-    a.augment(4)
+    # a.addLayer(rotate_range(30, 90, 0.5))
+    # a.addLayer(rotate_range(120, 170, 0.5))
+    # a.addLayer(rotate_range(180, 180, 0.5))
+    # a.augment(4)
     # a.addLayer(r)
     # a.printLayer()
     # name_test = 'VIS_R_1901385_191206152917120_RGB-Top-0-PNG_101_100_Saturated_191206153625070.png'
@@ -174,3 +186,7 @@ if __name__ == '__main__':
     #     label_test = json.load(file_test)
     # r = rotate_range(120, 150, 1)
     # r.execute(img, label_test, name_test)
+
+    a.addLayer(vertical_flip(1))
+    a.augment(2)
+
