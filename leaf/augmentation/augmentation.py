@@ -5,6 +5,9 @@ import random
 from PIL import Image, ImageDraw
 from math import *
 from copy import deepcopy
+import cv2
+import numpy as np
+
 
 
 class augmentation:
@@ -167,6 +170,34 @@ class rotate_angle(rotate_range):
         return f'rotate {self.angle} degree randomly with probability of {self.probability}'
 
 
+# partly from: https://blog.paperspace.com/data-augmentation-for-object-detection-rotation-and-shearing/
+class horizontal_shear:
+    # shear_factor: how much the image is horizontally sheared
+    # probability: the probability that this layer of action will happen (from 0 to 1)
+    def __init__(self, shear_factor, probability):
+        self.probability = probability
+        self.shear_factor = shear_factor
+
+    def __str__(self):
+        return f'horizontally shear randomly with shear factor of {self.shear_factor} with probability' \
+               f' of {self.probability}'
+
+    def execute(self, image, label, image_name):
+        # determine if continue or not
+        if not generateBool(self.probability):
+            return image, label
+        print(f'{image_name} go through {self}')  # debug
+        # convert the image to cv2 np array
+        cv2_image = np.array(image.convert('RGB'))
+        width, height = cv2_image.shape[1], cv2_image.shape[0]
+
+        M = np.array([[1, abs(self.shear_factor), 0],[0,1,0]])
+
+        nW = width + abs(self.shear_factor * height)
+
+
+
+
 # flip from top to bottom
 class vertical_flip:
     # probability: the probability that this layer of action will happen (from 0 to 1)
@@ -261,5 +292,5 @@ if __name__ == '__main__':
     # a.addLayer(vertical_flip(1))
     # a.augment(2)
 
-    a += rotate_angle(75, 1)
+    a += horizontal_shear(0.3, 1)
     a.augment(2)
