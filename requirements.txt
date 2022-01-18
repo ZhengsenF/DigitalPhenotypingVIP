@@ -1,12 +1,13 @@
 numpy
 scipy
+pandas
 Pillow
 cython
 matplotlib
 scikit-image
-tensorflow==2.7.0
-keras==2.7.0
+tensorflow==1.6.0
+keras==2.1.6
 opencv-python
-h5py
+h5py==2.10.0
 imgaug
 IPython[all]
